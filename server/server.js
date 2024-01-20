@@ -8,7 +8,9 @@ import cors from "cors";
 import admin from "firebase-admin";
 import {getAuth} from "firebase-admin/auth";
 import serviceAccountKey from "./blogging-website-2c39e-firebase-adminsdk-70cpm-0e336b0458.json" assert {type:"json"};
+import aws from "aws-sdk";
 
+//Schema below
 import User from './Schema/User.js';
 
 const app = express();
@@ -23,9 +25,29 @@ let passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/; // regex for pass
 
 app.use(express.json());
 app.use(cors());
+
 mongoose.connect(process.env.DB_LOCATION, {
   autoIndex: true
 });
+
+//setting up s3 bucket
+const s3 = new aws.S3({
+  region: 'ap-south-1',
+  accessKeyId: process.env.AWS_ACCESS_KEY,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+})
+
+const generateUrl = async () => {
+  const date = new Date();
+  const imgName = `${nanoid()}-${date.getTime()}.jpeg`
+  
+  return await s3.getSignedUrlPromise('putObject',{
+    Bucket: 'personal-blogging-website',
+    Key: imgName,
+    Expires: 1000,
+    ContentType: "image/jpeg"
+  })
+}
 
 const generateUsername = async (email) => {
   let username = email.split("@")[0];
@@ -48,6 +70,16 @@ const formatData = (user) => {
     fullname: user.personal_info.fullname
   }
 }
+
+//upload image url route
+app.get('/get-upload-url', (req, res) => {
+  generateUrl()
+  .then(url => res.status(200).json({ "uploadUrl":url }))
+  .catch(err => {
+    console.log(err.message);
+    return res.status(500).json({ "error": err.message })
+  })
+});
 
 app.post("/signup",(req, res) => {
   let { fullname, email, password } = req.body;
