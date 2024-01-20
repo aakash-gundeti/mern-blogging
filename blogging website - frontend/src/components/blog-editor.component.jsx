@@ -1,12 +1,12 @@
 import { Link } from "react-router-dom";
+import { useRef } from "react";
+import { Toaster, toast } from "react-hot-toast";
 
 import logo from "../imgs/logo.png";
 import defaultBanner from "../imgs/blog banner.png";
 
 import AnimationWrapper from "../common/page-animation";
 import { uploadImage } from "../common/aws";
-import { useRef } from "react";
-import { Toaster, toast } from "react-hot-toast";
 
 const BlogEditor = () => {
   let blogBannerRef = useRef();
